@@ -1,0 +1,3 @@
+
+class AVException(Exception):
+    pass
