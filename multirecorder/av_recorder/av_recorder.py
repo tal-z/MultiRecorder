@@ -60,7 +60,7 @@ def record_av(audio_source, video_source, filename="output_file", duration=None)
         logging.error(f"An unexpected error occurred: {e}")
 
 if __name__ == "__main__":
-    now = datetime.datetime.now().strftime("%Y%m%dT%H:%M")
+    now = datetime.datetime.now().strftime("%Y%m%dT%H%M")
     record_av(
         audio_source="s",
         video_source="m",
