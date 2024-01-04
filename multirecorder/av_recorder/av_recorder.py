@@ -17,7 +17,7 @@ MONITOR_NAME = device_names["MONITOR_NAME"]
 RECORD_MICROPHONE_COMMAND_ARGS = f'-f dshow -i audio="{MICROPHONE_NAME}" -thread_queue_size 512'
 RECORD_SPEAKERS_COMMAND_ARGS = f'-f dshow -i audio="{SPEAKERS_NAME}" -thread_queue_size 512'
 RECORD_WEBCAM_COMMAND_ARGS = F'-f dshow -i video="{WEBCAM_NAME}" -framerate 32 -thread_queue_size 512'
-RECORD_MONITOR_COMMAND_ARGS = f'-f gdigrab -framerate 32 -thread_queue_size 512 -i {MONITOR_NAME}'
+RECORD_MONITOR_COMMAND_ARGS = f'-f gdigrab -framerate 23 -thread_queue_size 512 -i {MONITOR_NAME}'
 
 
 def record_av(audio_source, video_source, picture_in_picture_video_source='', picture_in_picture_scale=1, filename="output_file", duration=None):
@@ -79,13 +79,19 @@ def record_av(audio_source, video_source, picture_in_picture_video_source='', pi
             picture_in_picture_video_command_args = ""
 
         else:
-            raise AVException("picture_in_picture_video_source input not recognized. Accepted values include 'monitor' and 'webcam'")
+            raise AVException(
+                "picture_in_picture_video_source input not recognized. Accepted values include 'monitor' and 'webcam'"
+            )
 
         filter_args = (
             (
-                f'-filter_complex "[1:v]scale={scale} [overlay]'
-                f';[0:v][overlay]overlay=W-w-10:H-h-10[v01];[2:a]aformat=sample_fmts=fltp:channel_layouts=stereo '
-                '[a];[a][2:a]amerge=inputs=2[aout]" -map "[v01]" -map "[aout]"'
+                f'-filter_complex "[1:v]scale={scale},'
+                f' setpts=PTS-STARTPTS [overlay];'
+                f'[0:v][overlay]overlay=W-w-10:H-h-10[v01];'
+                f'[2:a]aformat=sample_fmts=fltp:channel_layouts=stereo,'
+                f' asetpts=PTS-STARTPTS [a];'
+                f'[a][2:a]amerge=inputs=2[aout]" '
+                f'-map "[v01]" -map "[aout]"'
             )
             if picture_in_picture_video_command_args
             else ''
@@ -98,8 +104,13 @@ def record_av(audio_source, video_source, picture_in_picture_video_source='', pi
             video_command_args,
             picture_in_picture_video_command_args,
             audio_command_args,
-            '-c:v libxvid -q:v 0',  # specifies video codec
-            '-c:a aac -strict experimental -b:a 192k',  # specifies audio codec
+            '-c:v libx264',
+            '-crf 18',
+            '-preset veryfast',
+            '-c:a aac',
+            '-b:a 128k',
+            '-r 23.976',
+            '-vsync 1',
             filter_args,
             duration_args,
             f'{filename}.avi',
@@ -114,12 +125,13 @@ def record_av(audio_source, video_source, picture_in_picture_video_source='', pi
     except Exception as e:
         logging.error(f"An unexpected error occurred: {e}")
 
+
 if __name__ == "__main__":
     now = datetime.datetime.now().strftime("%Y%m%dT%H%M")
     record_av(
-        audio_source="m",
-        video_source="w",
-        picture_in_picture_video_source="m",
+        audio_source="s",
+        video_source="m",
+        # picture_in_picture_video_source="w",
         filename=f"recording_{now}",
-        duration=5
+        duration=30
     )
